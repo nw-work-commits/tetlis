@@ -2,6 +2,10 @@
 
 ブラウザで動く落ち物パズル。**1台のキーボードで最大4人**まで同時に遊べる。
 
+![2Dと3Dの対戦](docs/screenshot.png)
+
+**▶ ブラウザですぐ遊べます — https://nw-work-commits.github.io/tetlis/**
+
 **依存ゼロ・ビルド不要**。`index.html` を開けばそのまま動く。
 絵は絵文字、音は WebAudio の合成音で、素材ファイルを一切持たない。
 
