@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Tetlis</title>
+<link rel="stylesheet" href="styles.css?v=43">
+</head>
+<body>
+<div class="app" data-theme="classic">
+
+  <!-- ====== Menu (step wizard) ====== -->
+  <section id="menu" class="menu">
+    <div class="menu-inner wizard">
+
+      <div class="wizard-head">
+        <h1 class="logo">TETLIS</h1>
+        <ol class="wizard-steps" id="wizardSteps"></ol>
+      </div>
+
+      <div class="wizard-body" id="wizardBody">
+
+        <!-- STEP look: 見た目と音 -->
+        <section class="wstep" data-step="look">
+          <h2 class="wstep-title">まずは見た目と音 🎨</h2>
+          <p class="wstep-sub">テーマで雰囲気がガラッと変わります。BGMは選ぶとすぐ鳴ります。</p>
+
+          <div class="wfield">
+            <label class="wfield-label">テーマ</label>
+            <div id="themeBtns" class="theme-swatches">
+              <button data-theme="classic" class="active"><i style="--sw:#38bdf8"></i>クラシック</button>
+              <button data-theme="neon"><i style="--sw:#ff3bff"></i>ネオン</button>
+              <button data-theme="dark"><i style="--sw:#bbbbbb"></i>ダーク</button>
+              <button data-theme="retro"><i style="--sw:#ffb84d"></i>レトロ</button>
+              <button data-theme="pastel"><i style="--sw:#a78bfa"></i>パステル</button>
+              <button data-theme="sunset"><i style="--sw:#ff7e5f"></i>サンセット</button>
+              <button data-theme="ocean"><i style="--sw:#00d4ff"></i>オーシャン</button>
+              <button data-theme="forest"><i style="--sw:#95d5b2"></i>フォレスト</button>
+              <button data-theme="candy"><i style="--sw:#ff5d8f"></i>キャンディ</button>
+              <button data-theme="cyber"><i style="--sw:#00f5d4"></i>サイバー</button>
+            </div>
+          </div>
+
+          <div class="wfield">
+            <label class="wfield-label">効果音</label>
+            <div class="sound-row">
+              <button id="muteBtnMenu" class="ghost-btn mute-btn" title="ミュート">🔊</button>
+              <input id="volumeRange" type="range" min="0" max="100" step="1" value="40">
+              <span id="volumeVal" class="muted">40%</span>
+            </div>
+          </div>
+
+          <div class="wfield">
+            <label class="wfield-label">BGM</label>
+            <div class="sound-row">
+              <div id="bgmBtns" class="seg">
+                <button data-bgm="off" class="active">なし</button>
+                <button data-bgm="pulse">パルス</button>
+                <button data-bgm="drift">ドリフト</button>
+                <button data-bgm="arcade">アーケード</button>
+              </div>
+              <input id="bgmVolRange" type="range" min="0" max="100" step="1" value="50" title="BGM音量">
+            </div>
+          </div>
+        </section>
+
+        <!-- STEP count: 人数 -->
+        <section class="wstep" data-step="count">
+          <h2 class="wstep-title">何人で遊ぶ？ 👥</h2>
+          <p class="wstep-sub">このあとプレイヤーごとに 2D / 3D を選べます（混在・3D対3DもOK）。</p>
+          <div id="playerCountBtns" class="cards cards-count">
+            <button data-n="1" class="card"><span class="card-ico">🙂</span><span class="card-main">1人</span><span class="card-sub">ソロ・練習</span></button>
+            <button data-n="2" class="card active"><span class="card-ico">👥</span><span class="card-main">2人</span><span class="card-sub">対戦</span></button>
+            <button data-n="3" class="card"><span class="card-ico">🧑‍🤝‍🧑</span><span class="card-main">3人</span><span class="card-sub">バトル</span></button>
+            <button data-n="4" class="card"><span class="card-ico">🎉</span><span class="card-main">4人</span><span class="card-sub">パーティ</span></button>
+          </div>
+        </section>
+
+        <!-- STEP game: 形式・モード・3D詳細 -->
+        <section class="wstep" data-step="game">
+          <h2 class="wstep-title">ゲームを選ぼう 🎮</h2>
+
+          <div class="wfield" id="row-dims">
+            <label class="wfield-label">次元</label>
+            <div id="dimRows" class="type-rows"></div>
+          </div>
+
+          <div class="wfield" id="row-mode">
+            <label class="wfield-label">モード</label>
+            <div id="modeBtns" class="cards cards-mode">
+              <button data-mode="item" class="card active"><span class="card-ico">🎁</span><span class="card-main">アイテム</span></button>
+              <button data-mode="super_item" class="card"><span class="card-ico">💥</span><span class="card-main">スーパー</span></button>
+              <button data-mode="pure" class="card"><span class="card-ico">⬜</span><span class="card-main">純粋</span></button>
+              <button data-mode="sprint" class="card"><span class="card-ico">⏱️</span><span class="card-main">スプリント</span></button>
+              <button data-mode="tromino" class="card"><span class="card-ico">🧩</span><span class="card-main">ミノ3</span></button>
+              <button data-mode="pentomino" class="card"><span class="card-ico">🧱</span><span class="card-main">ミノ5</span></button>
+              <button data-mode="random" class="card"><span class="card-ico">🎲</span><span class="card-main">ランダム</span></button>
+              <button data-mode="cascade" class="card"><span class="card-ico">🌊</span><span class="card-main">カスケード</span></button>
+              <button data-mode="blind" class="card"><span class="card-ico">🫥</span><span class="card-main">ブラインド</span></button>
+              <button data-mode="ultra" class="card"><span class="card-ico">⏲️</span><span class="card-main">ウルトラ</span></button>
+            </div>
+          </div>
+
+          <div class="wfield" id="row-modedesc">
+            <label class="wfield-label">ルール</label>
+            <div id="modeDesc" class="mode-desc"></div>
+          </div>
+
+          <div class="wfield hidden" id="row-3ddepth">
+            <label class="wfield-label">奥行き</label>
+            <div id="depth3dBtns" class="seg">
+              <button data-depth="3">3（薄い）</button>
+              <button data-depth="5" class="active">5</button>
+              <button data-depth="7">7</button>
+              <button data-depth="10">10（フル）</button>
+            </div>
+          </div>
+
+          <div class="wfield hidden" id="row-3dassist">
+            <label class="wfield-label">奥行き操作</label>
+            <div id="assist3dBtns" class="seg">
+              <button data-auto="1" class="active">オート</button>
+              <button data-auto="0">手動</button>
+            </div>
+          </div>
+
+          <div class="wfield hidden" id="row-3dspeed">
+            <label class="wfield-label">落下速度</label>
+            <div id="speed3dBtns" class="seg">
+              <button data-speed="slow">ゆっくり</button>
+              <button data-speed="normal" class="active">普通</button>
+              <button data-speed="fast">速い</button>
+            </div>
+          </div>
+
+          <div class="wfield hidden" id="row-3dmode">
+            <label class="wfield-label">3D消去</label>
+            <div id="mode3dBtns" class="seg">
+              <button data-m="line" class="active">ライン</button>
+              <button data-m="plane">プレーン</button>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- STEP player: 種別・盤面・操作 -->
+        <section class="wstep" data-step="player">
+          <h2 class="wstep-title">プレイヤーと操作 🕹️</h2>
+          <div class="wfield" id="row-types">
+            <label class="wfield-label">種別</label>
+            <div id="typeRows" class="type-rows"></div>
+          </div>
+          <div class="wfield" id="row-widths">
+            <label class="wfield-label">盤面幅</label>
+            <div id="widthRows" class="type-rows"></div>
+          </div>
+          <div class="wfield" id="row-touch">
+            <label class="wfield-label">タッチ操作</label>
+            <div id="touchBtns" class="seg">
+              <button data-touch="-1" class="active">なし</button>
+              <button data-touch="0">P1</button>
+              <button data-touch="1">P2</button>
+              <button data-touch="2">P3</button>
+              <button data-touch="3">P4</button>
+            </div>
+          </div>
+          <div class="wfield" id="row-pad">
+            <label class="wfield-label">パッド</label>
+            <div id="padStatus" class="pad-status">ゲームパッド未接続（接続後、何かボタンを押してください）</div>
+          </div>
+          <div class="wfield" id="row-keys">
+            <label class="wfield-label">キー操作</label>
+            <div id="keyHelp" class="key-help"></div>
+          </div>
+        </section>
+
+        <!-- STEP char: キャラ -->
+        <section class="wstep" data-step="char">
+          <h2 class="wstep-title">キャラを選ぼう ✨</h2>
+          <p class="wstep-sub">必殺技・かけ声・パーティクルがキャラごとに違います。</p>
+          <div id="charRows" class="char-tiles-wrap"></div>
+        </section>
+
+        <!-- STEP handicap: ハンデ -->
+        <section class="wstep" data-step="handicap">
+          <h2 class="wstep-title">ハンデを決めよう ⚖️</h2>
+          <p class="wstep-sub">差をつけたいときだけ。そのままでもOK。</p>
+          <div id="handicapRows" class="handicap-rows"></div>
+        </section>
+
+      </div>
+
+      <div class="wizard-nav">
+        <button id="wizPrev" class="ghost-btn nav-prev">← 戻る</button>
+        <div class="wiz-summary" id="wizSummary"></div>
+        <button id="wizQuick" class="ghost-btn nav-quick hidden">この設定で始める ▶</button>
+        <button id="wizNext" class="start-btn nav-next">次へ →</button>
+        <button id="startBtn" class="start-btn nav-start hidden">▶ スタート</button>
+        <button id="fsBtnMenu" class="ghost-btn fs-btn" title="全画面切替">⛶</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== Match ====== -->
+  <section id="match" class="match hidden">
+    <header class="hud">
+      <div class="title">TETLIS</div>
+      <div class="hud-right">
+        <span id="matchStatus" class="muted">進行中</span>
+        <button id="muteBtn" class="ghost-btn" title="ミュート">🔊</button>
+        <button id="fsBtn" class="ghost-btn" title="全画面切替">⛶</button>
+        <button id="backBtn" class="ghost-btn">メニュー</button>
+      </div>
+    </header>
+    <div id="fields" class="fields"></div>
+  </section>
+
+  <div id="fxLayer"><canvas id="fxCanvas"></canvas></div>
+</div>
+
+<script src="src/config.js?v=43"></script>
+<script src="src/theme.js?v=43"></script>
+<script src="src/characters.js?v=43"></script>
+<script src="src/fx.js?v=43"></script>
+<script src="src/audio.js?v=43"></script>
+<script src="src/music.js?v=43"></script>
+<script src="src/piece.js?v=43"></script>
+<script src="src/bag.js?v=43"></script>
+<script src="src/field.js?v=43"></script>
+<script src="src/attack.js?v=43"></script>
+<script src="src/input.js?v=43"></script>
+<script src="src/gamepad.js?v=43"></script>
+<script src="src/touch.js?v=43"></script>
+<script src="src/input-manager.js?v=43"></script>
+<script src="src/render.js?v=43"></script>
+<script src="src/game.js?v=43"></script>
+<script src="src/ai.js?v=43"></script>
+<script src="src/match.js?v=43"></script>
+<script src="src/tetris3d.js?v=43"></script>
+<script src="src/session3d.js?v=43"></script>
+<script src="src/sessionvs.js?v=43"></script>
+<script src="src/sessionarena.js?v=43"></script>
+<script src="src/menu.js?v=43"></script>
+<script src="src/main.js?v=43"></script>
+</body>
+</html>

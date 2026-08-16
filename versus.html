@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Tetlis — 2D vs 3D</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .vs-app{display:flex;flex-direction:column;height:100vh;}
+  .vs-hud{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--border);}
+  .vs-title{font-weight:800;letter-spacing:2px;color:var(--accent);}
+  .vs-status{color:var(--muted);font-size:13px;}
+  .vs-stage{flex:1;display:flex;gap:18px;padding:14px;overflow:auto;align-items:flex-start;justify-content:center;}
+  .vs-col{display:flex;flex-direction:column;gap:8px;align-items:center;}
+  .vs-col h2{margin:0;font-size:13px;letter-spacing:2px;color:var(--accent);}
+  .views3d{display:grid;grid-template-columns:auto auto;gap:8px;}
+  .view3d{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px;}
+  .view3d h3{margin:0 0 4px;font-size:9px;letter-spacing:1px;color:var(--muted);font-weight:600;}
+  .view3d canvas, .vs-next{display:block;background:var(--board-bg,#0d1224);border-radius:5px;}
+  .vs-stats3d{display:grid;grid-template-columns:1fr auto;gap:2px 6px;font-size:12px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:8px;width:100%;}
+  .vs-stats3d dt{color:var(--muted);} .vs-stats3d dd{margin:0;text-align:right;}
+  /* Menu overlay */
+  .vs-menu{position:fixed;inset:0;background:rgba(5,8,16,.92);display:flex;align-items:center;justify-content:center;z-index:20;}
+  .vs-menu.hidden{display:none;}
+  .vs-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px 28px;width:min(560px,92%);}
+  .vs-card h1{margin:0 0 4px;color:var(--accent);letter-spacing:3px;}
+  .vs-card p{margin:0 0 16px;color:var(--muted);font-size:13px;}
+  .vs-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--border);}
+  .vs-row label{width:90px;color:var(--muted);font-size:12px;letter-spacing:1px;}
+  .seg{display:flex;gap:4px;flex-wrap:wrap;}
+  .seg button{background:var(--panel-2,#1c2440);color:var(--text);border:1px solid var(--border);padding:7px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;}
+  .seg button.active{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+  .vs-start{margin-top:18px;width:100%;padding:13px;font-size:15px;font-weight:800;letter-spacing:3px;background:var(--accent);color:var(--bg);border:none;border-radius:8px;cursor:pointer;}
+  .vs-keys{font-size:11px;color:var(--muted);line-height:1.6;margin-top:6px;}
+  .vs-keys b{color:var(--text);}
+  button.ghost{background:transparent;color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;}
+  button.ghost:hover{border-color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="app" data-theme="classic">
+<div class="vs-app">
+  <div class="vs-hud">
+    <div class="vs-title">TETLIS — 2D vs 3D</div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <span id="vsStatus" class="vs-status">準備中</span>
+      <button id="vsMenuBtn" class="ghost">メニュー</button>
+    </div>
+  </div>
+  <div class="vs-stage">
+    <div class="vs-col">
+      <h2 id="lab2d">2D</h2>
+      <div id="board2d"></div>
+    </div>
+    <div class="vs-col">
+      <h2 id="lab3d">3D</h2>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <div class="views3d">
+          <div class="view3d"><h3>正面</h3><canvas id="f3d"></canvas></div>
+          <div class="view3d"><h3>横</h3><canvas id="s3d"></canvas></div>
+          <div class="view3d"><h3>上</h3><canvas id="t3d"></canvas></div>
+          <div class="view3d"><h3>立体</h3><canvas id="i3d"></canvas></div>
+        </div>
+        <div style="width:120px;display:flex;flex-direction:column;gap:8px;">
+          <div class="view3d"><h3>NEXT</h3><canvas id="n3d" class="vs-next"></canvas></div>
+          <dl class="vs-stats3d"><dt>SCORE</dt><dd id="sc3d">0</dd><dt>消去</dt><dd id="cl3d">0</dd><dt>受け</dt><dd id="gb3d">0</dd></dl>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Menu -->
+<div id="vsMenu" class="vs-menu">
+  <div class="vs-card">
+    <h1>2D vs 3D</h1>
+    <p>2Dテトリスと3Dテトリスがお邪魔を送り合う対戦。攻撃は控えめ設定です。</p>
+    <div class="vs-row">
+      <label>2D側</label>
+      <div id="sel2d" class="seg">
+        <button data-t="human" class="active">人間</button>
+        <button data-t="cpu:easy">CPU弱</button>
+        <button data-t="cpu:normal">CPU普通</button>
+        <button data-t="cpu:hard">CPU強</button>
+      </div>
+    </div>
+    <div class="vs-row">
+      <label>3D側</label>
+      <div id="sel3d" class="seg">
+        <button data-t="human">人間</button>
+        <button data-t="cpu:easy">CPU弱</button>
+        <button data-t="cpu:normal" class="active">CPU普通</button>
+        <button data-t="cpu:hard">CPU強</button>
+      </div>
+    </div>
+    <div class="vs-row">
+      <label>3D消去</label>
+      <div id="selMode" class="seg">
+        <button data-m="line" class="active">ライン</button>
+        <button data-m="plane">プレーン</button>
+      </div>
+    </div>
+    <div class="vs-row" style="border-top:1px solid var(--border);">
+      <label>操作</label>
+      <div class="vs-keys">
+        <b>2D</b>: A/D 移動 · S ソフト · W 回転 · Q 逆回転 · Space ハード · E ホールド<br>
+        <b>3D</b>: ←→↑↓ 移動 · Z/X 正面回転 · C/V 前後回転 · 右Shift ソフト · Enter ハード
+      </div>
+    </div>
+    <button id="vsStart" class="vs-start">スタート</button>
+    <div class="vs-keys" style="text-align:center;">P 一時停止 · R リスタート · Esc メニュー</div>
+  </div>
+</div>
+</div>
+
+<script src="src/config.js"></script>
+<script src="src/piece.js"></script>
+<script src="src/bag.js"></script>
+<script src="src/field.js"></script>
+<script src="src/attack.js"></script>
+<script src="src/game.js"></script>
+<script src="src/ai.js"></script>
+<script src="src/render.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/tetris3d.js"></script>
+<script>
+// ---- Cross-dimension attack balance (gentle) ----
+const ROWS_PER_LAYER = 4;   // 2D garbage rows needed to push one 3D garbage layer
+const POWER_PER_ROW  = 3;   // 3D clear "power" needed to push one 2D garbage row
+
+const els = {
+  board2d: document.getElementById('board2d'),
+  f:document.getElementById('f3d'), s:document.getElementById('s3d'),
+  top:document.getElementById('t3d'), iso:document.getElementById('i3d'), next:document.getElementById('n3d'),
+  status:document.getElementById('vsStatus'),
+  sc3d:document.getElementById('sc3d'), cl3d:document.getElementById('cl3d'), gb3d:document.getElementById('gb3d'),
+  lab2d:document.getElementById('lab2d'), lab3d:document.getElementById('lab3d'),
+};
+
+let M = null; // current match state
+
+function labelFor(t, dim){
+  if(t==='human') return dim+' (人間)';
+  const m={ 'cpu:easy':'CPU弱','cpu:normal':'CPU普通','cpu:hard':'CPU強' };
+  return dim+' ('+(m[t]||t)+')';
+}
+
+function buildMatch(type2d, type3d, mode3d){
+  // 2D
+  const game2d = new Game(null, 'item', 10);
+  els.board2d.innerHTML='';
+  const playerEl=document.createElement('div'); playerEl.className='player'; els.board2d.appendChild(playerEl);
+  const view2d = new PlayerView(playerEl, labelFor(type2d,'2D'), 10, 24);
+  game2d.targetIndex=-1;
+  // 3D
+  const game3d = new T3D.Game3D(mode3d);
+  const renderer3d = new T3D.Renderer3D({front:els.f,side:els.s,top:els.top,iso:els.iso,next:els.next}, 13);
+
+  // attack accumulators
+  let acc2to3=0, acc3to2=0;
+  game2d.onAttacks = (g,list)=>{
+    let rows=0; for(const a of list) if(a.type==='garbage') rows+=a.amount;
+    if(rows<=0) return;
+    acc2to3+=rows;
+    while(acc2to3>=ROWS_PER_LAYER){ game3d.addGarbage(1); acc2to3-=ROWS_PER_LAYER; }
+  };
+  game3d.onAttack = (power)=>{
+    acc3to2+=power;
+    while(acc3to2>=POWER_PER_ROW){ game2d.pendingGarbage=Math.min(CFG.PENDING_GARBAGE_CAP, game2d.pendingGarbage+1); acc3to2-=POWER_PER_ROW; }
+  };
+
+  // AIs
+  const ai2d = type2d.startsWith('cpu:') ? new CpuAI(game2d, type2d.slice(4)) : null;
+  const ai3d = type3d.startsWith('cpu:') ? new T3D.AI3D(game3d, type3d.slice(4)) : null;
+
+  els.lab2d.textContent=labelFor(type2d,'2D');
+  els.lab3d.textContent=labelFor(type3d,'3D');
+
+  return { game2d, view2d, game3d, renderer3d, ai2d, ai3d, type2d, type3d, mode3d, decided:false };
+}
+
+// ---- input ----
+const keys2d = { KeyA:['left'],KeyD:['right'],KeyS:['softDown'],KeyW:['rotCW'],KeyQ:['rotCCW'],Space:['hardDrop'],KeyE:['hold'] };
+window.addEventListener('keydown',e=>{
+  if(e.code==='Escape'){ toMenu(); return; }
+  if(!M) return;
+  if(e.code==='KeyP'){ const p=!M.game2d.paused; M.game2d.paused=p; M.game3d.paused=p; return; }
+  if(e.code==='KeyR'){ const {type2d,type3d,mode3d}=M; M=buildMatch(type2d,type3d,mode3d); return; }
+  // 2D human
+  if(M.type2d==='human' && keys2d[e.code]){ e.preventDefault(); M.game2d.action(keys2d[e.code][0],'down'); }
+  // 3D human
+  if(M.type3d==='human'){
+    const g=M.game3d;
+    if(g.over||g.paused) return;
+    switch(e.code){
+      case 'ArrowLeft': e.preventDefault(); g.tryMove(-1,0,0); break;
+      case 'ArrowRight': e.preventDefault(); g.tryMove(1,0,0); break;
+      case 'ArrowUp': e.preventDefault(); g.tryMove(0,-1,0); break;
+      case 'ArrowDown': e.preventDefault(); g.tryMove(0,1,0); break;
+      case 'KeyZ': g.tryRot('Y',-1); break;
+      case 'KeyX': g.tryRot('Y',1); break;
+      case 'KeyC': g.tryRot('X',1); break;
+      case 'KeyV': g.tryRot('X',-1); break;
+      case 'ShiftRight': g.softDrop=true; break;
+      case 'Enter': g.hardDrop(); break;
+    }
+  }
+});
+window.addEventListener('keyup',e=>{
+  if(!M) return;
+  if(M.type2d==='human' && e.code==='KeyS') M.game2d.action('softDown','up');
+  if(M.type3d==='human' && e.code==='ShiftRight') M.game3d.softDrop=false;
+});
+
+// ---- menu ----
+let pick2d='human', pick3d='cpu:normal', pickMode='line';
+function wireSeg(id, set){ document.querySelectorAll('#'+id+' button').forEach(b=>{ b.onclick=()=>{
+  document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); set(b); }; }); }
+wireSeg('sel2d', b=>pick2d=b.dataset.t);
+wireSeg('sel3d', b=>pick3d=b.dataset.t);
+wireSeg('selMode', b=>pickMode=b.dataset.m);
+document.getElementById('vsStart').onclick=()=>{
+  document.getElementById('vsMenu').classList.add('hidden');
+  M = buildMatch(pick2d, pick3d, pickMode);
+};
+document.getElementById('vsMenuBtn').onclick=toMenu;
+function toMenu(){ M=null; document.getElementById('vsMenu').classList.remove('hidden'); }
+
+// ---- loop ----
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(now-last,100); last=now;
+  if(M){
+    const now2=now;
+    if(M.ai2d) M.ai2d.tick(now2);
+    if(M.ai3d) M.ai3d.tick(now2);
+    M.game2d.tick(dt);
+    M.game3d.tick(dt);
+    M.view2d.draw(M.game2d, 0, [M.game2d]);
+    M.renderer3d.draw(M.game3d);
+    els.sc3d.textContent=M.game3d.score.toLocaleString();
+    els.cl3d.textContent=M.game3d.cleared;
+    els.gb3d.textContent=M.game3d.pendingGarbage;
+    // status / win
+    if(!M.decided){
+      if(M.game2d.gameOver){ M.decided=true; els.status.textContent='3D の勝利！ (Rでリスタート)'; }
+      else if(M.game3d.over){ M.decided=true; els.status.textContent='2D の勝利！ (Rでリスタート)'; }
+      else els.status.textContent='対戦中';
+    }
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// visibility safety (stop runaway when hidden)
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden && M){ M.game2d.paused=true; M.game3d.paused=true; }
+  else last=performance.now();
+});
+</script>
+</body>
+</html>

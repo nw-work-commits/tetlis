@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Tetlis 3D</title>
+<style>
+  :root{--bg:#0b0f1a;--panel:#141a2b;--panel2:#1c2440;--text:#e6ecff;--muted:#7d88a8;--accent:#38bdf8;--border:#2a3358;--board:#0d1224;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI','Hiragino Sans',system-ui,sans-serif;overflow:hidden;}
+  .app{display:flex;flex-direction:column;height:100vh;}
+  header{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--border);}
+  .title{font-weight:800;letter-spacing:2px;color:var(--accent);}
+  .title small{color:var(--muted);font-weight:400;letter-spacing:1px;margin-left:8px;}
+  .hud-right{display:flex;gap:8px;align-items:center;}
+  button.ghost{background:transparent;color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;}
+  button.ghost:hover{border-color:var(--accent);} button.ghost.active{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+  .keys{font-size:11px;color:var(--muted);}
+  .stage{flex:1;display:flex;gap:14px;padding:14px;overflow:auto;align-items:flex-start;justify-content:center;}
+  .views{display:grid;grid-template-columns:auto auto;gap:12px;}
+  .view{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px;}
+  .view h2{margin:0 0 6px;font-size:11px;letter-spacing:2px;color:var(--muted);font-weight:600;}
+  canvas{display:block;background:var(--board);border-radius:6px;}
+  .side{width:200px;display:flex;flex-direction:column;gap:12px;}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px;}
+  .panel h2{margin:0 0 6px;font-size:11px;letter-spacing:2px;color:var(--muted);font-weight:600;}
+  dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:3px 6px;font-size:13px;}
+  dt{color:var(--muted);} dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;}
+  .keys b{color:var(--text);} .keys{line-height:1.6;}
+  .seg{display:flex;gap:4px;} .seg button{flex:1;}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:10;}
+  .overlay.hidden{display:none;} .overlay .big{font-size:36px;font-weight:800;letter-spacing:4px;color:var(--accent);} .overlay .sub{color:var(--muted);margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="title">TETLIS 3D <small>幅10 × 奥行10 × 高16</small></div>
+    <div class="hud-right">
+      <span class="keys">消去:</span>
+      <div class="seg"><button id="modeLine" class="ghost active">ライン</button><button id="modePlane" class="ghost">プレーン</button></div>
+      <button id="restart" class="ghost">リスタート (R)</button>
+    </div>
+  </header>
+  <div class="stage">
+    <div class="views">
+      <div class="view"><h2>正面 (Front · X×高さ)</h2><canvas id="front"></canvas></div>
+      <div class="view"><h2>横 (Side · 奥行×高さ)</h2><canvas id="side"></canvas></div>
+      <div class="view"><h2>上 (Top · X×奥行)</h2><canvas id="top"></canvas></div>
+      <div class="view"><h2>立体 (3D)</h2><canvas id="iso"></canvas></div>
+    </div>
+    <div class="side">
+      <div class="panel"><h2>NEXT</h2><canvas id="next"></canvas></div>
+      <div class="panel"><h2>STATS</h2><dl><dt>SCORE</dt><dd id="score">0</dd><dt>消去</dt><dd id="cleared">0</dd><dt>LEVEL</dt><dd id="level">1</dd></dl></div>
+      <div class="panel keys"><h2 style="color:var(--muted)">操作</h2>
+        <b>← →</b> 左右(X)<br><b>↑ ↓</b> 奥/手前(奥行Y)<br><b>Z / X</b> 正面 反時計/時計回転<br>
+        <b>C / V</b> 前回転 / 後ろ回転<br><b>Shift</b> ソフトドロップ<br><b>Space</b> ハードドロップ<br><b>P</b> 一時停止 / <b>R</b> リスタート</div>
+    </div>
+  </div>
+</div>
+<div id="overlay" class="overlay hidden"><div class="big" id="ovText">READY</div><div class="sub" id="ovSub"></div></div>
+
+<script src="src/tetris3d.js"></script>
+<script>
+const C = { front:document.getElementById('front'), side:document.getElementById('side'),
+  top:document.getElementById('top'), iso:document.getElementById('iso'), next:document.getElementById('next') };
+let renderer = new T3D.Renderer3D(C, 20);
+let mode = 'line';
+let game = new T3D.Game3D(mode);
+
+const keymap = {
+  ArrowLeft:()=>game.tryMove(-1,0,0), ArrowRight:()=>game.tryMove(1,0,0),
+  ArrowUp:()=>game.tryMove(0,-1,0), ArrowDown:()=>game.tryMove(0,1,0),
+  KeyZ:()=>game.tryRot('Y',-1), KeyX:()=>game.tryRot('Y',1),
+  KeyC:()=>game.tryRot('X',1), KeyV:()=>game.tryRot('X',-1),
+  Space:()=>game.hardDrop(),
+};
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyP'){ if(!game.over) game.paused=!game.paused; return; }
+  if(e.code==='KeyR'){ game=new T3D.Game3D(mode); return; }
+  if(e.code==='ShiftLeft'||e.code==='ShiftRight'){ game.softDrop=true; e.preventDefault(); return; }
+  if(game.over||game.paused) return;
+  const fn=keymap[e.code]; if(fn){ e.preventDefault(); fn(); }
+});
+window.addEventListener('keyup',e=>{ if(e.code==='ShiftLeft'||e.code==='ShiftRight') game.softDrop=false; });
+document.getElementById('restart').onclick=()=>{ game=new T3D.Game3D(mode); };
+document.getElementById('modeLine').onclick=()=>{ mode='line'; setMode(); };
+document.getElementById('modePlane').onclick=()=>{ mode='plane'; setMode(); };
+function setMode(){ document.getElementById('modeLine').classList.toggle('active',mode==='line');
+  document.getElementById('modePlane').classList.toggle('active',mode==='plane'); game=new T3D.Game3D(mode); }
+
+let pad=new T3D.Pad3D(game,0);
+const _origSetMode=setMode; // ensure pad follows new game on mode change/restart
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(now-last,100); last=now;
+  pad.setGame(game); pad.poll(now);
+  game.tick(dt); renderer.draw(game);
+  document.getElementById('score').textContent=game.score.toLocaleString();
+  document.getElementById('cleared').textContent=game.cleared;
+  document.getElementById('level').textContent=game.level;
+  const ov=document.getElementById('overlay');
+  if(game.over){ ov.classList.remove('hidden'); document.getElementById('ovText').textContent='GAME OVER'; document.getElementById('ovSub').textContent='R でリスタート'; }
+  else if(game.paused){ ov.classList.remove('hidden'); document.getElementById('ovText').textContent='PAUSED'; document.getElementById('ovSub').textContent='P で再開'; }
+  else ov.classList.add('hidden');
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

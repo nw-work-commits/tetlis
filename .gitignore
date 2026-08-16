@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+*.log
+
+# 作業用の設定（ローカルのパスや個人名が入るため公開しない）
+.claude/
